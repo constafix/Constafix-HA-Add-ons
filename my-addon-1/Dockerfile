@@ -3,15 +3,17 @@ FROM node:18-alpine
 # Создаём директорию
 WORKDIR /app
 
-# Копируем файлы
-COPY server.js .
-COPY run.sh .
+# Копируем package.json и package-lock.json (если есть)
+COPY package*.json ./
+
+# Устанавливаем зависимости
+RUN npm install
+
+# Копируем оставшиеся файлы
+COPY . .
 
 # Делаем скрипт исполняемым
 RUN chmod +x /app/run.sh
-
-# Устанавливаем зависимости, если есть
-# RUN npm install
 
 # Запускаем
 CMD ["/app/run.sh"]

@@ -1,19 +1,11 @@
 {
-  "name": "ha",
+  "name": "node-server-addon",
   "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "description": "Node.js сервер для Home Assistant",
+  "main": "server.js",
   "dependencies": {
-    "axios": "^1.8.4",
+    "axios": "^1.9.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.5.0",
-    "express": "^5.1.0"
-  },
-  "description": ""
+    "express": "^4.21.2"
+  }
 }

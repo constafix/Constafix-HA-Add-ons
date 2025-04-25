@@ -1,11 +1,14 @@
-name: "Hello world"
-description: "My first real add-on!"
+name: "Node Server"
 version: "1.0.0"
-slug: "hello_world"
-init: false
+slug: "node_server"
+description: "Простой Node.js сервер, запущенный как аддон"
 arch:
-  - aarch64
   - amd64
-  - armhf
-  - armv7
-  - i386
+  - aarch64
+startup: services
+boot: auto
+options: {}
+schema: {}
+init: false
+ports:
+  3000/tcp: 3000

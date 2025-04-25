@@ -1,8 +1,17 @@
-ARG BUILD_FROM
-FROM $BUILD_FROM
+FROM node:18-alpine
 
-# Copy data for add-on
-COPY run.sh /
-RUN chmod a+x /run.sh
+# Создаём директорию
+WORKDIR /app
 
-CMD [ "/run.sh" ]
+# Копируем файлы
+COPY server.js .
+COPY run.sh .
+
+# Делаем скрипт исполняемым
+RUN chmod +x /app/run.sh
+
+# Устанавливаем зависимости, если есть
+# RUN npm install
+
+# Запускаем
+CMD ["/app/run.sh"]

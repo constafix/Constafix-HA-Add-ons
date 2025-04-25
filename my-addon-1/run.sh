@@ -1,3 +1,4 @@
-#!/usr/bin/with-contenv bashio
+#!/bin/sh
 
-echo "Hello world!"
+echo "Запуск Node.js сервера"
+node /app/server.js

@@ -1,8 +1,8 @@
 function askGPT() {
   const prompt = document.getElementById("prompt").value;
   document.getElementById("output").textContent = "Отправка...";
-
-  fetch("http://localhost:3000/api/chat", {
+  const serverHost = window.location.hostname;
+  fetch(`http://${serverHost}:3000/api/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"

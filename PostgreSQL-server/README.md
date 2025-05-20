@@ -1,0 +1,18 @@
+# PostgreSQL Server Add-on для Home Assistant
+
+Этот аддон разворачивает PostgreSQL-сервер в Docker-контейнере Home Assistant с настройкой через UI.
+
+## Настраиваемые параметры:
+- `pgdata`: путь к данным PostgreSQL (по умолчанию `/data/postgresql`)
+- `database`: имя базы данных (например `ha_db`)
+- `username`: имя пользователя БД
+- `password`: пароль пользователя
+
+## Особенности:
+- Данные сохраняются между перезапусками (persisted volume).
+- Возможность подключаться к БД через внешний клиент.
+- Открыт порт 5432 для подключения.
+
+## Подключение:
+```text
+jdbc:postgresql://<homeassistant_ip>:5432/<database>

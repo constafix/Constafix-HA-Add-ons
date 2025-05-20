@@ -1,10 +1,9 @@
-FROM postgres:15
+FROM postgres:17
 
-# Переменная среды по умолчанию
-ENV PGDATA=/var/lib/postgresql/data
 
-# Копируем скрипт запуска
+ENV PGDATA=/data/postgresql
+
 COPY run.sh /run.sh
 RUN chmod +x /run.sh
 
-CMD [ "/run.sh" ]
+CMD ["/run.sh"]

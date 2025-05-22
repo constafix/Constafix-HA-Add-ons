@@ -1,11 +1,24 @@
-name: "Hello world"
-description: "My first real add-on!"
+name: "PostgreSQL Server"
+description: "Лёгкий PostgreSQL сервер как аддон для Home Assistant"
 version: "1.0.0"
-slug: "hello_world"
+slug: "postgresql_server"
 init: false
+startup: services
+boot: auto
+homeassistant: 2023.0.0
 arch:
   - aarch64
   - amd64
-  - armhf
   - armv7
-  - i386
+options:
+  database: ha_db
+  username: ha_user
+  password: secure_password
+schema:
+  database: str
+  username: str
+  password: str
+ports:
+  5432/tcp: 5432
+map:
+  - data:rw

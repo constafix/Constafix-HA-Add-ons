@@ -1,9 +1,10 @@
-#!/usr/bin/with-contenv bashio
+#!/bin/sh
 
-# Получаем параметры из конфигурации
-DB_NAME=$(bashio::config 'database')
-DB_USER=$(bashio::config 'username')
-DB_PASS=$(bashio::config 'password')
+CONFIG_PATH=/data/options.json
+
+DB_NAME=$(jq --raw-output '.database' $CONFIG_PATH)
+DB_USER=$(jq --raw-output '.username' $CONFIG_PATH)
+DB_PASS=$(jq --raw-output '.password' $CONFIG_PATH)
 
 export PGDATA="/data/postgresql"
 

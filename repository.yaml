@@ -1,3 +1,3 @@
-name: Custom Addons
-url: https://github.com/yourusername/your-addon-repo
-maintainer: Константин <your_email@example.com>
+name: "Constafix addons",
+url: "https://github.com/constafix/Constafix-HA-Add-ons",
+maintainer: "Константин <constafix@gmail.com>"

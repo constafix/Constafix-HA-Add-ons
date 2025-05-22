@@ -1,7 +1,7 @@
 name: "PostgreSQL Server"
-description: "Custom PostgreSQL add-on for Home Assistant"
-version: "1.0.1"
-slug: "custom_postgres"
+description: "PostgreSQL сервер как аддон для Home Assistant"
+version: "1.0.0"
+slug: "postgresql_server"
 init: false
 startup: services
 boot: auto
@@ -11,8 +11,6 @@ arch:
   - armhf
   - armv7
   - i386
-map:
-  - data:rw
 options:
   database: "ha_db"
   username: "ha_user"

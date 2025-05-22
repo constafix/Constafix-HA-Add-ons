@@ -1,13 +1,24 @@
-FROM postgres:16-alpine
+ARG BUILD_FROM
+FROM $BUILD_FROM
 
-# Установка необходимых утилит
-RUN apk add --no-cache su-exec jq
-
-# Копируем скрипт запуска
-COPY run.sh /run.sh
-RUN chmod +x /run.sh
-
-# Задаём рабочую директорию PostgreSQL
+ENV LANG C.UTF-8
 ENV PGDATA=/var/lib/postgresql/data
+
+# Установка зависимостей и bashio
+RUN apk add --no-cache \
+    bash \
+    curl \
+    jq \
+    su-exec \
+    postgresql \
+    postgresql-client \
+    postgresql-contrib \
+ && curl -sSL https://raw.githubusercontent.com/hassio-addons/bashio/master/install.sh | bash
+
+# Создание директории для данных PostgreSQL
+RUN mkdir -p /var/lib/postgresql/data && chown -R postgres:postgres /var/lib/postgresql
+
+COPY run.sh /
+RUN chmod a+x /run.sh
 
 CMD [ "/run.sh" ]

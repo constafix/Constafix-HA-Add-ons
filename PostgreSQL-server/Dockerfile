@@ -1,8 +1,8 @@
-FROM postgres:17-alpine
+ARG BUILD_FROM
+FROM $BUILD_FROM
 
-ENV PGDATA=/data/postgresql
+# Copy data for add-on
+COPY run.sh /
+RUN chmod a+x /run.sh
 
-COPY run.sh /run.sh
-RUN chmod +x /run.sh
-
-CMD ["/run.sh"]
+CMD [ "/run.sh" ]

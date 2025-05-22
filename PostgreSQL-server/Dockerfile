@@ -1,11 +1,9 @@
-ARG BUILD_FROM
-FROM $BUILD_FROM
+FROM postgres:16-alpine
 
-# Установка нужных утилит
-RUN apk add --no-cache curl jq su-exec
+# Установка su-exec для запуска под другим пользователем
+RUN apk add --no-cache su-exec
 
-# Копируем скрипт запуска
 COPY run.sh /run.sh
-RUN chmod a+x /run.sh
+RUN chmod +x /run.sh
 
-CMD [ "/run.sh" ]
+CMD ["/run.sh"]

@@ -3,7 +3,7 @@ description: "Custom PostgreSQL add-on for Home Assistant"
 version: "1.0.3"
 slug: "custom_postgres"
 init: false
-startup: application
+startup: services
 boot: auto
 arch:
   - aarch64

@@ -68,12 +68,23 @@ check_data_directory() {
 
   # Убедимся, что папка принадлежит пользователю postgres
   chown -R postgres:postgres "$PGDATA" || exit_with_error "Не удалось изменить владельца папки $PGDATA"
+
+  # Проверяем наличие файла PG_VERSION
+  if [ -f "$PGDATA/PG_VERSION" ]; then
+    log_info "Файл PG_VERSION найден. База данных уже инициализирована."
+    return 0
+  fi
 }
 
 init_db() {
   log_info "Инициализация PostgreSQL в $PGDATA"
 
   PWFILE=/tmp/postgres_pwfile
+
+  # Проверяем, что папка пуста
+  if [ "$(ls -A "$PGDATA")" ]; then
+    exit_with_error "Папка $PGDATA не пуста. Инициализация невозможна."
+  fi
 
   echo "$PG_SUPERPASS" > "$PWFILE" || exit_with_error "Не удалось записать пароль в $PWFILE"
   chmod 600 "$PWFILE" || exit_with_error "Не удалось установить права 600 на $PWFILE"

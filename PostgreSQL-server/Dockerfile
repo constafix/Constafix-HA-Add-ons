@@ -9,6 +9,6 @@ COPY run.sh /run.sh
 RUN chmod +x /run.sh
 
 # Путь к хранилищу данных PostgreSQL (по умолчанию в образе)
-ENV PGDATA=/var/lib/postgresql/data
+ENV PGDATA=/data
 
 CMD ["/run.sh"]

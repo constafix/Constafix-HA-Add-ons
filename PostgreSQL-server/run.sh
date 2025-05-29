@@ -9,14 +9,14 @@ PG_SUPERPASS=$(jq --raw-output '.postgres_password' $CONFIG)
 
 export PGDATA="/var/lib/postgresql/data"
 
-# Если БД ещё нет — инициализируем с паролем суперпользователя
+# Инициализация, если БД ещё нет
 if [ ! -s "$PGDATA/PG_VERSION" ]; then
   echo "[INFO] Инициализация PostgreSQL в $PGDATA"
 
-  # Создаём временный файл с паролем для initdb
   PWFILE=/tmp/postgres_pwfile
   echo "$PG_SUPERPASS" > "$PWFILE"
   chmod 600 "$PWFILE"
+  chown postgres:postgres "$PWFILE"   # Критично для доступа initdb
 
   su-exec postgres initdb --auth=scram-sha-256 --pwfile="$PWFILE"
   rm -f "$PWFILE"
@@ -25,33 +25,30 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
   ls -l "$PGDATA"
 fi
 
-# Проверяем наличие конфигурационного файла
+# Проверка, что postgresql.conf существует
 if [ ! -f "$PGDATA/postgresql.conf" ]; then
   echo "[ERROR] Файл postgresql.conf не найден в $PGDATA!"
   exit 1
 fi
 
-# Настройка postgresql.conf (без дублирования строк)
+# Настройка postgresql.conf
 echo "[INFO] Настройка postgresql.conf"
-grep -q "^listen_addresses" "$PGDATA/postgresql.conf" && \
-  sed -i "s/^listen_addresses.*/listen_addresses = '*'/" "$PGDATA/postgresql.conf" || \
-  echo "listen_addresses = '*'" >> "$PGDATA/postgresql.conf"
+sed -i "/^listen_addresses/c\listen_addresses = '*'" "$PGDATA/postgresql.conf"
+sed -i "/^password_encryption/c\password_encryption = 'scram-sha-256'" "$PGDATA/postgresql.conf"
 
-grep -q "^password_encryption" "$PGDATA/postgresql.conf" && \
-  sed -i "s/^password_encryption.*/password_encryption = 'scram-sha-256'/" "$PGDATA/postgresql.conf" || \
-  echo "password_encryption = 'scram-sha-256'" >> "$PGDATA/postgresql.conf"
-
-# Настройка pg_hba.conf (добавляем правило, если нет)
+# Настройка pg_hba.conf
 if ! grep -q "^host all all 0.0.0.0/0 scram-sha-256" "$PGDATA/pg_hba.conf"; then
   echo "[INFO] Настройка pg_hba.conf"
   echo "host all all 0.0.0.0/0 scram-sha-256" >> "$PGDATA/pg_hba.conf"
 fi
 
-# Запуск PostgreSQL в фоне
+# Запуск PostgreSQL в фоне с указанием пароля суперпользователя
 echo "[INFO] Запуск PostgreSQL..."
+# Экспортируем пароль для psql
+export PGPASSWORD="$PG_SUPERPASS"
 su-exec postgres postgres &
 
-# Ожидание запуска PostgreSQL (максимум 30 секунд)
+# Надёжное ожидание запуска сервера (максимум 30 секунд)
 echo "[INFO] Ожидание запуска PostgreSQL..."
 timeout=30
 while [ $timeout -gt 0 ]; do
@@ -68,16 +65,13 @@ if [ $timeout -eq 0 ]; then
   exit 1
 fi
 
-# Установка переменной окружения для пароля суперпользователя
-export PGPASSWORD="$PG_SUPERPASS"
-
-# Создание базы, если нет
+# Создание базы, если её нет
 if ! su-exec postgres psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
   echo "[INFO] Создание базы $DB_NAME"
   su-exec postgres psql -U postgres -c "CREATE DATABASE \"$DB_NAME\""
 fi
 
-# Создание пользователя, если нет
+# Создание пользователя, если его нет
 if ! su-exec postgres psql -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1; then
   echo "[INFO] Создание пользователя $DB_USER"
   su-exec postgres psql -U postgres -c "CREATE ROLE \"$DB_USER\" WITH LOGIN PASSWORD '$DB_PASS'"

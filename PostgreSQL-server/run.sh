@@ -12,6 +12,15 @@ export PGDATA="/var/lib/postgresql/data"
 if [ ! -s "$PGDATA/PG_VERSION" ]; then
   echo "[INFO] Инициализация PostgreSQL в $PGDATA"
   su-exec postgres initdb --auth=scram-sha-256
+
+  echo "[INFO] Содержимое $PGDATA после initdb:"
+  ls -l "$PGDATA"
+fi
+
+# Проверка, что postgresql.conf существует
+if [ ! -f "$PGDATA/postgresql.conf" ]; then
+  echo "[ERROR] Файл postgresql.conf не найден в $PGDATA!"
+  exit 1
 fi
 
 # Настройка postgresql.conf

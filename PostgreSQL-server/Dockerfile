@@ -1,5 +1,5 @@
 # Используем чистый PostgreSQL-образ
-FROM postgres:17.5
+FROM postgres:17.5-bookworm
 
 # Устанавливаем утилиты для чтения JSON и смены пользователя
 RUN apk add --no-cache jq su-exec

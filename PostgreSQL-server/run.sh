@@ -36,7 +36,6 @@ exit_with_error() {
 
 CONFIG=/data/options.json
 
-# Функция ловит ошибки, выводит сообщение и код строки
 trap 'exit_with_error "Скрипт прерван с ошибкой на строке $LINENO"' ERR
 
 read_config() {
@@ -55,7 +54,6 @@ init_db() {
 
   PWFILE=/tmp/postgres_pwfile
 
-  # Создаем временный файл с паролем суперпользователя
   echo "$PG_SUPERPASS" > "$PWFILE" || exit_with_error "Не удалось записать пароль в $PWFILE"
   chmod 600 "$PWFILE" || exit_with_error "Не удалось установить права 600 на $PWFILE"
   chown postgres:postgres "$PWFILE" || exit_with_error "Не удалось изменить владельца $PWFILE"
@@ -86,10 +84,20 @@ configure_conf_files() {
   fi
 }
 
+enable_full_logging() {
+  log_info "Включаем полное логирование PostgreSQL"
+
+  sed -i "/^log_connections/c\log_connections = on" "$PGDATA/postgresql.conf" || exit_with_error "Не удалось включить log_connections"
+  sed -i "/^log_disconnections/c\log_disconnections = on" "$PGDATA/postgresql.conf" || exit_with_error "Не удалось включить log_disconnections"
+  sed -i "/^logging_collector/c\logging_collector = on" "$PGDATA/postgresql.conf" || exit_with_error "Не удалось включить logging_collector"
+  sed -i "/^log_destination/c\log_destination = 'stderr'" "$PGDATA/postgresql.conf" || exit_with_error "Не удалось настроить log_destination"
+  sed -i "/^log_line_prefix/c\log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d '" "$PGDATA/postgresql.conf" || exit_with_error "Не удалось настроить log_line_prefix"
+  sed -i "/^log_statement/c\log_statement = 'all'" "$PGDATA/postgresql.conf" || exit_with_error "Не удалось включить log_statement"
+}
+
 start_postgres() {
   log_info "Запуск PostgreSQL..."
 
-  # Передаем пароль суперпользователя в переменную окружения для psql и других команд
   export PGPASSWORD="$PG_SUPERPASS"
 
   su-exec postgres postgres &
@@ -109,7 +117,6 @@ start_postgres() {
 }
 
 create_db_and_user() {
-  # Создание базы, если нет
   if ! su-exec postgres psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
     log_info "Создаем базу данных '$DB_NAME'"
     su-exec postgres psql -U postgres -c "CREATE DATABASE \"$DB_NAME\"" || exit_with_error "Не удалось создать базу данных '$DB_NAME'"
@@ -117,7 +124,6 @@ create_db_and_user() {
     log_info "База данных '$DB_NAME' уже существует"
   fi
 
-  # Создание пользователя, если нет
   if ! su-exec postgres psql -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1; then
     log_info "Создаем пользователя '$DB_USER'"
     su-exec postgres psql -U postgres -c "CREATE ROLE \"$DB_USER\" WITH LOGIN PASSWORD '$DB_PASS'" || exit_with_error "Не удалось создать пользователя '$DB_USER'"
@@ -125,7 +131,6 @@ create_db_and_user() {
     log_info "Пользователь '$DB_USER' уже существует"
   fi
 
-  # Выдача привилегий
   log_info "Выдаем все привилегии пользователю '$DB_USER' на базу '$DB_NAME'"
   su-exec postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE \"$DB_NAME\" TO \"$DB_USER\"" || exit_with_error "Не удалось выдать привилегии"
 }
@@ -140,6 +145,9 @@ main() {
   fi
 
   configure_conf_files
+
+  enable_full_logging
+
   start_postgres
   create_db_and_user
 

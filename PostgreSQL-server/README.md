@@ -23,7 +23,7 @@
 ### 🚀 Quick Start
 1. Install the add-on via **Supervisor → Add-ons**
 2. Go to the **Configuration** tab:
-   - Set `database`, `username`, and `password`
+   - Set `database`, `username` and `password`
 3. Start the add-on
 4. Connect using any PostgreSQL client:
    ```bash
@@ -56,7 +56,7 @@ This add-on does not expose its ports to the internet by default. For LAN access
 ### 🚀 Быстрый старт
 1. Установите аддон через **Supervisor → Add-ons**
 2. Перейдите во вкладку **Configuration**:
-   - Укажите `database`, `username`, и `password`
+   - Укажите `database`, `username` и `password`
 3. Запустите аддон
 4. Подключитесь с помощью клиента PostgreSQL:
    ```bash

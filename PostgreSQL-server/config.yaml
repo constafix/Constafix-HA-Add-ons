@@ -1,6 +1,6 @@
 name: "PostgreSQL Server"
 description: "Custom PostgreSQL add-on for Home Assistant"
-version: "1.0.4"
+version: "1.0.3"
 slug: "custom_postgres"
 init: false
 startup: services

@@ -5,13 +5,26 @@ CONFIG=/data/options.json
 DB_NAME=$(jq --raw-output '.database' $CONFIG)
 DB_USER=$(jq --raw-output '.username' $CONFIG)
 DB_PASS=$(jq --raw-output '.password' $CONFIG)
+PG_SUPER_PASS=$(jq --raw-output '.postgres_password' $CONFIG)
 
 export PGDATA="/var/lib/postgresql/data"
 
 # Инициализация, если БД ещё нет
 if [ ! -s "$PGDATA/PG_VERSION" ]; then
   echo "[INFO] Инициализация PostgreSQL в $PGDATA"
-  su-exec postgres initdb --auth=scram-sha-256
+
+  # Проверяем, что пароль суперпользователя задан
+  if [ -z "$PG_SUPER_PASS" ] || [ "$PG_SUPER_PASS" = "null" ]; then
+    echo "[ERROR] Пароль суперпользователя postgresql не задан в конфиге (postgres_password)!"
+    exit 1
+  fi
+
+  echo "$PG_SUPER_PASS" > /tmp/postgres_pwfile
+  chmod 600 /tmp/postgres_pwfile
+
+  su-exec postgres initdb --auth=scram-sha-256 --pwfile=/tmp/postgres_pwfile
+
+  rm /tmp/postgres_pwfile
 
   echo "[INFO] Содержимое $PGDATA после initdb:"
   ls -l "$PGDATA"

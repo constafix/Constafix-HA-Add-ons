@@ -48,6 +48,7 @@ read_config() {
 
 check_data_directory() {
   log_info "Проверка наличия и прав папки данных $PGDATA..."
+  log_info "Абсолютный путь к папке данных: $(realpath $PGDATA)"
 
   if [ ! -d "$PGDATA" ]; then
     log_warn "Папка данных $PGDATA не существует. Пытаюсь создать..."

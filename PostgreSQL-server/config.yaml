@@ -1,6 +1,6 @@
 name: "PostgreSQL Server"
 description: "Custom PostgreSQL add-on for Home Assistant"
-version: "1.0.3"
+version: "1.0.4"
 slug: "custom_postgres"
 init: false
 startup: services
@@ -12,14 +12,14 @@ arch:
   - armv7
   - i386
 map:
-  - data:rw
+  - /data:/var/lib/postgresql/data
 ports:
   5432/tcp: 5432
 options:
   database: "ha_db"
   username: "ha_user"
   password: "ha_pass"
-  postgres_password: "super_secret_password" 
+  postgres_password: "super_secret_password"
 schema:
   database: str
   username: str

@@ -1,14 +1,12 @@
 #!/bin/sh
 
-# Выход при ошибках, использование необъявленных переменных и ошибки пайпов
 set -euo pipefail
 
-# Цвета для логов (ANSI escape sequences)
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # без цвета
+NC='\033[0m'
 
 LOG_PREFIX="[custom_postgres]"
 LOG_INDENT="  "
@@ -35,6 +33,7 @@ exit_with_error() {
 }
 
 CONFIG=/data/options.json
+export PGDATA="/var/lib/postgresql/data"
 
 trap 'exit_with_error "Скрипт прерван с ошибкой на строке $LINENO"' ERR
 
@@ -47,7 +46,26 @@ read_config() {
   log_info "Конфигурация: database='$DB_NAME', username='$DB_USER', (пароли скрыты)"
 }
 
-export PGDATA="/var/lib/postgresql/data"
+check_data_directory() {
+  log_info "Проверка наличия и прав папки данных $PGDATA..."
+
+  if [ ! -d "$PGDATA" ]; then
+    log_warn "Папка данных $PGDATA не существует. Пытаюсь создать..."
+    mkdir -p "$PGDATA" || exit_with_error "Не удалось создать папку данных $PGDATA"
+    log_info "Папка $PGDATA успешно создана."
+  else
+    log_info "Папка данных $PGDATA существует."
+  fi
+
+  ls -ld "$PGDATA" || log_warn "Не удалось получить подробности папки $PGDATA"
+
+  # Проверим права
+  if [ ! -w "$PGDATA" ]; then
+    log_warn "Папка $PGDATA недоступна для записи!"
+  else
+    log_info "Права на запись в папку $PGDATA установлены."
+  fi
+}
 
 init_db() {
   log_info "Инициализация PostgreSQL в $PGDATA"
@@ -117,6 +135,7 @@ start_postgres() {
 }
 
 create_db_and_user() {
+  log_info "Проверка существования базы данных '$DB_NAME'..."
   if ! su-exec postgres psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
     log_info "Создаем базу данных '$DB_NAME'"
     su-exec postgres psql -U postgres -c "CREATE DATABASE \"$DB_NAME\"" || exit_with_error "Не удалось создать базу данных '$DB_NAME'"
@@ -124,6 +143,7 @@ create_db_and_user() {
     log_info "База данных '$DB_NAME' уже существует"
   fi
 
+  log_info "Проверка существования пользователя '$DB_USER'..."
   if ! su-exec postgres psql -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1; then
     log_info "Создаем пользователя '$DB_USER'"
     su-exec postgres psql -U postgres -c "CREATE ROLE \"$DB_USER\" WITH LOGIN PASSWORD '$DB_PASS'" || exit_with_error "Не удалось создать пользователя '$DB_USER'"
@@ -138,7 +158,10 @@ create_db_and_user() {
 main() {
   read_config
 
+  check_data_directory
+
   if [ ! -s "$PGDATA/PG_VERSION" ]; then
+    log_info "Файл PG_VERSION не найден — инициализируем БД заново"
     init_db
   else
     log_info "PostgreSQL уже инициализирован (файл PG_VERSION найден)"

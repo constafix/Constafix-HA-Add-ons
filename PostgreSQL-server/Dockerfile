@@ -1,5 +1,5 @@
 # Используем чистый PostgreSQL-образ
-FROM postgres:16-alpine
+FROM postgres:latest
 
 # Устанавливаем утилиты для чтения JSON и смены пользователя
 RUN apk add --no-cache jq su-exec

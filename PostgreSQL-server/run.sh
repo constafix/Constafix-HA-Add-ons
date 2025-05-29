@@ -13,14 +13,15 @@ export PGDATA="/var/lib/postgresql/data"
 if [ ! -s "$PGDATA/PG_VERSION" ]; then
   echo "[INFO] Инициализация PostgreSQL в $PGDATA"
 
-  # Проверяем, что пароль суперпользователя задан
   if [ -z "$PG_SUPER_PASS" ] || [ "$PG_SUPER_PASS" = "null" ]; then
     echo "[ERROR] Пароль суперпользователя postgresql не задан в конфиге (postgres_password)!"
     exit 1
   fi
 
+  # Создаём файл с паролем и выставляем правильные права и владельца
   echo "$PG_SUPER_PASS" > /tmp/postgres_pwfile
   chmod 600 /tmp/postgres_pwfile
+  chown postgres:postgres /tmp/postgres_pwfile
 
   su-exec postgres initdb --auth=scram-sha-256 --pwfile=/tmp/postgres_pwfile
 

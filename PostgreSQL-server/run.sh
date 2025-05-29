@@ -74,6 +74,11 @@ check_data_directory() {
     log_info "Файл PG_VERSION найден. База данных уже инициализирована."
     return 0
   fi
+
+  # Проверяем, пуста ли папка
+  if [ "$(ls -A "$PGDATA")" ]; then
+    exit_with_error "Папка $PGDATA не пуста, но файл PG_VERSION отсутствует. Проверьте содержимое папки."
+  fi
 }
 
 init_db() {

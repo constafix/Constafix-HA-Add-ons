@@ -12,17 +12,13 @@ arch:
   - armv7
   - i386
 map:
-  share: rw
-  data:
-    - source: /data
-      target: /data
-      mode: rw
+  data: rw
 ports:
   5432/tcp: 5432
 options:
   database: "ha_db"
   username: "ha_user"
-  password: "ha_pass1"
+  password: "ha_pass"
   postgres_password: "super_secret_password" 
 schema:
   database: str

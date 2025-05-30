@@ -31,7 +31,7 @@ exit_with_error() {
 }
 
 CONFIG=/data/options.json
-export PGDATA="/var/lib/postgresql/data"
+export PGDATA="/data/data/postgres"
 
 trap 'exit_with_error "Скрипт прерван с ошибкой на строке $LINENO"' ERR
 

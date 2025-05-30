@@ -22,7 +22,7 @@ ports:
 options:
   database: "ha_db"
   username: "ha_user"
-  password: "ha_pass"
+  password: "ha_pass1"
   postgres_password: "super_secret_password" 
 schema:
   database: str

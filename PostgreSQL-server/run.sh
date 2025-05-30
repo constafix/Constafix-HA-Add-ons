@@ -63,6 +63,9 @@ check_data_directory() {
   else
     log_info "Права на запись в папку $PGDATA установлены."
   fi
+
+  # 👇 Важно! Передаём права пользователю postgres
+  chown -R postgres:postgres "$PGDATA" || exit_with_error "Не удалось сменить владельца $PGDATA на postgres"
 }
 
 init_db() {

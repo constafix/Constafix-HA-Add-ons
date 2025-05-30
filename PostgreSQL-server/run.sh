@@ -15,7 +15,7 @@ LOG_INDENT="  "
 
 # Переменные
 CONFIG=/data/options.json
-export PGDATA="/data"
+export PGDATA="/data/data/postgres"
 timeout=30
 
 # Функции логирования

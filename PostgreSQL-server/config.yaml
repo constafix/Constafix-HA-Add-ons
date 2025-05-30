@@ -12,7 +12,7 @@ arch:
   - armv7
   - i386
 map:
-  data: rw
+  - data/postgres: rw
 ports:
   5432/tcp: 5432
 options:

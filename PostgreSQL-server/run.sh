@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 set -euo pipefail
 
 RED='\033[0;31m'
@@ -46,7 +47,6 @@ read_config() {
 
 check_data_directory() {
   log_info "Проверка наличия и прав папки данных $PGDATA..."
-
   if [ ! -d "$PGDATA" ]; then
     log_warn "Папка данных $PGDATA не существует. Пытаюсь создать..."
     mkdir -p "$PGDATA" || exit_with_error "Не удалось создать папку данных $PGDATA"
@@ -57,14 +57,12 @@ check_data_directory() {
 
   ls -ld "$PGDATA" || log_warn "Не удалось получить подробности папки $PGDATA"
 
-  # Проверим права
   if [ ! -w "$PGDATA" ]; then
     log_warn "Папка $PGDATA недоступна для записи!"
   else
     log_info "Права на запись в папку $PGDATA установлены."
   fi
 
-  # 👇 Важно! Передаём права пользователю postgres
   chown -R postgres:postgres "$PGDATA" || exit_with_error "Не удалось сменить владельца $PGDATA на postgres"
 }
 
@@ -74,8 +72,8 @@ init_db() {
   PWFILE=/tmp/postgres_pwfile
 
   echo "$PG_SUPERPASS" > "$PWFILE" || exit_with_error "Не удалось записать пароль в $PWFILE"
-  chmod 600 "$PWFILE" || exit_with_error "Не удалось установить права 600 на $PWFILE"
-  chown postgres:postgres "$PWFILE" || exit_with_error "Не удалось изменить владельца $PWFILE"
+  chmod 600 "$PWFILE"
+  chown postgres:postgres "$PWFILE"
 
   log_info "Запускаем initdb..."
   su-exec postgres initdb --auth=scram-sha-256 --pwfile="$PWFILE" || exit_with_error "Ошибка при инициализации базы данных"
@@ -92,12 +90,12 @@ configure_conf_files() {
   fi
 
   log_info "Настройка файла postgresql.conf"
-  sed -i "/^listen_addresses/c\listen_addresses = '*'" "$PGDATA/postgresql.conf" || exit_with_error "Не удалось настроить listen_addresses"
-  sed -i "/^password_encryption/c\password_encryption = 'scram-sha-256'" "$PGDATA/postgresql.conf" || exit_with_error "Не удалось настроить password_encryption"
+  sed -i "/^listen_addresses/c\listen_addresses = '*'" "$PGDATA/postgresql.conf"
+  sed -i "/^password_encryption/c\password_encryption = 'scram-sha-256'" "$PGDATA/postgresql.conf"
 
   if ! grep -q "^host all all 0.0.0.0/0 scram-sha-256" "$PGDATA/pg_hba.conf"; then
     log_info "Добавляем правило в pg_hba.conf для SCRAM аутентификации"
-    echo "host all all 0.0.0.0/0 scram-sha-256" >> "$PGDATA/pg_hba.conf" || exit_with_error "Не удалось обновить pg_hba.conf"
+    echo "host all all 0.0.0.0/0 scram-sha-256" >> "$PGDATA/pg_hba.conf"
   else
     log_info "Правило для SCRAM аутентификации уже существует в pg_hba.conf"
   fi
@@ -105,45 +103,38 @@ configure_conf_files() {
 
 enable_full_logging() {
   log_info "Включаем полное логирование PostgreSQL"
-
-  sed -i "/^log_connections/c\log_connections = on" "$PGDATA/postgresql.conf" || exit_with_error "Не удалось включить log_connections"
-  sed -i "/^log_disconnections/c\log_disconnections = on" "$PGDATA/postgresql.conf" || exit_with_error "Не удалось включить log_disconnections"
-  sed -i "/^logging_collector/c\logging_collector = on" "$PGDATA/postgresql.conf" || exit_with_error "Не удалось включить logging_collector"
-  sed -i "/^log_destination/c\log_destination = 'stderr'" "$PGDATA/postgresql.conf" || exit_with_error "Не удалось настроить log_destination"
-  sed -i "/^log_line_prefix/c\log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d '" "$PGDATA/postgresql.conf" || exit_with_error "Не удалось настроить log_line_prefix"
-  sed -i "/^log_statement/c\log_statement = 'all'" "$PGDATA/postgresql.conf" || exit_with_error "Не удалось включить log_statement"
+  sed -i "/^log_connections/c\log_connections = on" "$PGDATA/postgresql.conf"
+  sed -i "/^log_disconnections/c\log_disconnections = on" "$PGDATA/postgresql.conf"
+  sed -i "/^logging_collector/c\logging_collector = on" "$PGDATA/postgresql.conf"
+  sed -i "/^log_destination/c\log_destination = 'stderr'" "$PGDATA/postgresql.conf"
+  sed -i "/^log_line_prefix/c\log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d '" "$PGDATA/postgresql.conf"
+  sed -i "/^log_statement/c\log_statement = 'all'" "$PGDATA/postgresql.conf"
 }
 
 start_postgres() {
   log_info "Запуск PostgreSQL..."
-
   export PGPASSWORD="$PG_SUPERPASS"
-
   su-exec postgres postgres &
 
-  log_info "Ожидание запуска PostgreSQL (максимум 30 секунд)..."
+  log_info "Ожидание запуска PostgreSQL (до 30 секунд)..."
   timeout=30
   while [ $timeout -gt 0 ]; do
     if su-exec postgres pg_isready -q; then
-      log_info "PostgreSQL готов к подключениям"
-      return 0
+      if su-exec postgres psql -U postgres -tAc "SELECT 1" | grep -q 1; then
+        log_info "PostgreSQL полностью готов к подключениям"
+        return 0
+      else
+        log_warn "PostgreSQL запущен, но SELECT 1 не проходит. Повтор через 1 сек..."
+      fi
     fi
     sleep 1
     timeout=$((timeout - 1))
   done
 
-  exit_with_error "PostgreSQL не запустился вовремя"
+  exit_with_error "PostgreSQL не запустился вовремя или не отвечает на SELECT 1"
 }
 
-create_db_and_user() {
-  log_info "Проверка существования базы данных '$DB_NAME'..."
-  if ! su-exec postgres psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
-    log_info "Создаем базу данных '$DB_NAME'"
-    su-exec postgres psql -U postgres -c "CREATE DATABASE \"$DB_NAME\"" || exit_with_error "Не удалось создать базу данных '$DB_NAME'"
-  else
-    log_info "База данных '$DB_NAME' уже существует"
-  fi
-
+create_user_and_db() {
   log_info "Проверка существования пользователя '$DB_USER'..."
   if ! su-exec postgres psql -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1; then
     log_info "Создаем пользователя '$DB_USER'"
@@ -152,13 +143,20 @@ create_db_and_user() {
     log_info "Пользователь '$DB_USER' уже существует"
   fi
 
+  log_info "Проверка существования базы данных '$DB_NAME'..."
+  if ! su-exec postgres psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
+    log_info "Создаем базу данных '$DB_NAME' с владельцем '$DB_USER'"
+    su-exec postgres psql -U postgres -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\"" || exit_with_error "Не удалось создать базу данных '$DB_NAME'"
+  else
+    log_info "База данных '$DB_NAME' уже существует"
+  fi
+
   log_info "Выдаем все привилегии пользователю '$DB_USER' на базу '$DB_NAME'"
   su-exec postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE \"$DB_NAME\" TO \"$DB_USER\"" || exit_with_error "Не удалось выдать привилегии"
 }
 
 main() {
   read_config
-
   check_data_directory
 
   if [ ! -s "$PGDATA/PG_VERSION" ]; then
@@ -169,11 +167,10 @@ main() {
   fi
 
   configure_conf_files
-
   enable_full_logging
 
   start_postgres
-  create_db_and_user
+  create_user_and_db
 
   log_info "Скрипт завершён успешно. PostgreSQL готов к работе."
   wait

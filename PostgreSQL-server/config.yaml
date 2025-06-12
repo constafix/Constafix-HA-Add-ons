@@ -12,10 +12,7 @@ arch:
   - armv7
   - i386
 map:
-  - name: postgres_data
-    path: data/postgres
-    type: data
-    read_only: false
+  - data/postgres: rw
 ports:
   5432/tcp: 5432
 options:
